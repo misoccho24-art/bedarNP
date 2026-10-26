@@ -98,7 +98,7 @@ function render() {
   flash();
 
   if (!POSTS.length) {
-    ["latestSection", "videoSection", "opinionSection", "deskSection"].forEach(id => show(id, false));
+    ["videoSection", "opinionSection", "deskSection"].forEach(id => show(id, false));
     document.getElementById("front").innerHTML = `<div style="grid-column:1/-1;padding:0">
       ${emptyBox("এখনো কোনো খবর প্রকাশিত হয়নি", "নতুন প্রতিবেদন প্রকাশ হলে এখানে দেখা যাবে।")}</div>`;
     document.getElementById("topics").innerHTML = "";
@@ -106,62 +106,30 @@ function render() {
   }
 
   /* ---------- প্রথম পাতা --------------------------------------------
-     "প্রধান খবর" চিহ্নিত পোস্ট আগে, তারপর সাম্প্রতিক দিয়ে পূরণ (সর্বোচ্চ ৪টি):
-     মাঝে বড় প্রধান খবর, ডানে আরও ৩টি, বাঁয়ে সময়সহ "সর্বশেষ" কলাম।      */
+     বাঁয়ে সাম্প্রতিক ৪টি খবর (২×২); ডানে "সর্বশেষ" ১–৫ নম্বরের তালিকা।
+     "প্রধান খবর" চিহ্নিত পোস্ট আগে, তারপর নতুনগুলো দিয়ে ৪টি পূরণ।        */
   const marked = POSTS.filter(p => p.isLead);
   const rest = POSTS.filter(p => !p.isLead);
   const leads = [...marked, ...rest].slice(0, 4);
   const heroIds = new Set(leads.map(p => String(p.id)));
-  const [lead, ...side] = leads;
 
   document.getElementById("front").innerHTML = `
-    <aside class="front__latest">${latestColumn(6)}</aside>
-    <div class="front__lead">${story(lead, { size: "xl", dek: true, eager: true })}</div>
-    ${side.length ? `<div class="front__side">${side.map((a, i) =>
-        story(a, { size: i === 0 ? "md" : "sm", img: i === 0, eager: i === 0 })).join("")}</div>` : ""}`;
+    <div class="front__grid">${leads.map((a, i) => story(a, { size: "md", eager: i < 2 })).join("")}</div>
+    <aside class="front__latest">${recentList(POSTS, 5, "সর্বশেষ")}</aside>`;
 
   document.getElementById("topics").innerHTML = topicsStrip();
 
-  /* ---------- লেটেস্ট নিউজ — রেখা দিয়ে আলাদা কলাম -------------------- */
-  const latest = POSTS.filter(a => !heroIds.has(String(a.id))).slice(0, 4);
-  show("latestSection", latest.length > 0);
-  if (latest.length) {
-    const box = document.getElementById("latest");
-    box.style.setProperty("--n", Math.max(latest.length, 2));
-    box.innerHTML = latest.map(a => story(a, { size: "sm" })).join("");
-  }
-
-  /* ---------- বিভাগের পাতা (যে বিভাগে খবর আছে শুধু সেটি) -------------
-     প্রতিটির সর্বোচ্চ ৪টি খবর, পালাক্রমে দুই রকম বিন্যাসে:
-     ক) বাঁয়ে বড় ফিচার, ডানে শিরোনামের তালিকা   খ) রেখা দেওয়া কলাম।
-     হিরোতে থাকা পোস্টও এখানে বাদ যায় না — নইলে কোনো বিভাগের নিজের খবর
-     তার নিজের সেকশন থেকেই হারিয়ে যেত।                                  */
-  let n = 0;
-  const singles = [];          /* একটিমাত্র খবরের বিভাগগুলো — এক সারিতে একসাথে দেখানো হয় */
+  /* ---------- বিভাগভিত্তিক অংশ — প্রতিটি বিভাগের সাম্প্রতিক ৪টি খবর এক সারিতে ----
+     ক্রম data.js-এর CATEGORIES অনুযায়ী; যে বিভাগে খবর নেই সেটি দেখানো হয় না।
+     কলাম সবসময় ৪টি, তাই কম খবর থাকলেও কার্ডের মাপ একই থাকে।              */
   function desk(cat) {
     const list = inCat(cat.slug).slice(0, 4);
     if (!list.length) return "";
-    if (list.length === 1) { singles.push(list[0]); return ""; }
-    const [first, ...others] = list;
-    let body;
-    if (n++ % 2 === 0) {
-      body = `<div class="lay-a">
-        ${feature(first)}
-        <div class="numbered">${others.map(a => story(a, { size: "sm", img: false })).join("")}</div>
-      </div>`;
-    } else {
-      body = `<div class="cols cols--media" style="--n:${list.length}">${list.map((a, i) =>
-        story(a, { size: i === 0 ? "lg" : "md", dek: i === 0 })).join("")}</div>`;
-    }
-    return `<section class="section">${deskHead(cat.name, topicLink(cat.slug))}${body}</section>`;
+    return `<section class="section"${catAttr(cat.slug)}>${deskHead(cat.name, topicLink(cat.slug))}
+      <div class="cols cols--media" style="--n:4">${list.map(a => story(a, { size: "md" })).join("")}</div></section>`;
   }
 
-  let desks = CATEGORIES.filter(c => c.slug !== "video" && c.slug !== "opinion").map(desk).join("");
-  for (let i = 0; i < singles.length; i += 4) {
-    const row = singles.slice(i, i + 4);
-    desks += `<section class="section">${i === 0 ? deskHead("বিভাগ থেকে") : ""}
-      <div class="cols cols--media" style="--n:${Math.max(row.length, 2)}">${row.map(a => story(a, { dek: true })).join("")}</div></section>`;
-  }
+  const desks = CATEGORIES.filter(c => c.slug !== "video" && c.slug !== "opinion").map(desk).join("");
   show("deskSection", !!desks);
   document.getElementById("deskSection").innerHTML = desks;
 

@@ -80,13 +80,13 @@ function ogesc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23c23b0b%27/%3E%3Cpath d=%27M8 10h16M8 16h16M8 22h10%27 stroke=%27white%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
-<script>!function(){try{var t=localStorage.getItem("db-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);t==="dark"&&document.querySelector('meta[name="theme-color"]').setAttribute("content","#11100e")}catch(e){}if(location.protocol==="file:")return;var r=fetch("api/posts.php",{cache:"no-cache",headers:{Accept:"application/json"}});r.catch(function(){});window.__postsReq=r}()</script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23059669%27/%3E%3Cpath d=%27M8 10h16M8 16h16M8 22h10%27 stroke=%27white%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<script>!function(){try{var t=localStorage.getItem("db-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);t==="dark"&&document.querySelector('meta[name="theme-color"]').setAttribute("content","#0f1115")}catch(e){}if(location.protocol==="file:")return;var r=fetch("api/posts.php",{cache:"no-cache",headers:{Accept:"application/json"}});r.catch(function(){});window.__postsReq=r}()</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700;800&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700;800&display=swap"></noscript>
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
 
@@ -113,10 +113,10 @@ function ogesc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 <div id="siteFooter"></div>
 
-<script src="js/data.js?v=16"></script>
-<script src="js/geo.js?v=16"></script>
-<script src="js/store.js?v=16"></script>
-<script src="js/main.js?v=16"></script>
-<script src="js/article.js?v=16"></script>
+<script src="js/data.js?v=25"></script>
+<script src="js/geo.js?v=25"></script>
+<script src="js/store.js?v=25"></script>
+<script src="js/main.js?v=25"></script>
+<script src="js/article.js?v=25"></script>
 </body>
 </html>

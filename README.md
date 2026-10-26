@@ -20,7 +20,7 @@ admin71.html          Admin panel — type /admin after the site address
 admin/index.html      Makes /admin work everywhere (Live Server too): forwards to admin71.html
 about.html  contact.html  privacy.html  terms.html  advertise.html   Info pages (footer links)
 api/posts.php         Server API — stores posts permanently, checks the password
-data/                 Where posts.json is written (needs write permission)
+data/                 Where posts.json and views.json (view counts) are written (needs write permission)
 uploads/              Where uploaded photos are saved (needs write permission)
 css/style.css         All styling (colours, layout, responsive, dark mode)
 js/data.js            Site settings: name, contact details, categories
@@ -129,6 +129,11 @@ If you upload files by hand instead, upload every changed HTML page too: the
 
 The list on the right of the admin panel shows every story, with edit, publish and
 delete buttons. Delete asks first, then removes the story and its photo.
+
+**View counts:** every time a story is opened, on any device, its count goes up by
+one, shown as "১১ বার পঠিত" next to the time. Counts are kept in `data/views.json`,
+separate from the news. Hovering a link (which pre-loads the page) does not count;
+only actually opening the story does. In local mode the count is only for that browser.
 
 **Content safety:** the Post Content field only keeps a fixed set of safe HTML
 (paragraphs, bold/italic/underline, lists, quotes, links). Scripts, frames and click

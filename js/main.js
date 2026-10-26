@@ -98,11 +98,12 @@ const liveTags = () =>
   TAGS.filter(tag => POSTS.some(a => searchText(a).includes(tag.toLowerCase())));
 
 /* ---------- ছবি: img না থাকলে নকশা করা প্লেসহোল্ডার ------------------- */
+/* হালকা, উজ্জ্বল সবুজ-সায়ান-নীল — লাল, বাদামি, বেগুনি নেই */
 const PALETTES = [
-  ["#7f1d1d", "#ef4444"], ["#1c1917", "#a8a29e"], ["#78350f", "#fbbf24"],
-  ["#134e4a", "#5eead4"], ["#312e81", "#a5b4fc"], ["#3f3f46", "#e4e4e7"],
-  ["#831843", "#f9a8d4"], ["#14532d", "#86efac"], ["#0c4a6e", "#7dd3fc"],
-  ["#451a03", "#fb923c"]
+  ["#10b981", "#a7f3d0"], ["#06b6d4", "#a5f3fc"], ["#3b82f6", "#bfdbfe"],
+  ["#14b8a6", "#99f6e4"], ["#22c55e", "#bbf7d0"], ["#0ea5e9", "#bae6fd"],
+  ["#84cc16", "#d9f99d"], ["#0891b2", "#67e8f9"], ["#059669", "#6ee7b7"],
+  ["#64748b", "#cbd5e1"]
 ];
 
 /* id/বিভাগ থেকে একটি ছড়ানো সংখ্যা — কাছাকাছি id হলেও নকশা আলাদা হয় */
@@ -159,6 +160,7 @@ const ICON = {
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 21V5"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg>',
   image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>',
@@ -205,10 +207,10 @@ const isHomePage = active => active === null && /\/(index\.html)?$/.test(locatio
 function buildHeader(active) {
   const home = isHomePage(active);
   const navLinks = CATEGORIES
-    .map(c => `<a href="${topicLink(c.slug)}"${c.slug === active ? ' class="is-active" aria-current="page"' : ""}>${c.name}</a>`)
+    .map(c => `<a href="${topicLink(c.slug)}"${catAttr(c.slug)}${c.slug === active ? ' class="is-active" aria-current="page"' : ""}>${c.name}</a>`)
     .join("");
   const menuLinks = CATEGORIES.map(c =>
-    `<a href="${topicLink(c.slug)}"${c.slug === active ? ' class="is-active"' : ""}>${c.name}</a>`).join("");
+    `<a href="${topicLink(c.slug)}"${catAttr(c.slug)}${c.slug === active ? ' class="is-active"' : ""}>${c.name}</a>`).join("");
 
   return `
   <div class="mini" id="mini">
@@ -301,7 +303,7 @@ function buildFooter() {
     <div class="wrap">
       <a class="footer__name" href="${HOME}">${brandMark()}${SITE.name}</a>
       <nav class="footer__nav" aria-label="বিভাগ">
-        ${CATEGORIES.map(c => `<a href="${topicLink(c.slug)}">${c.name}</a>`).join("")}
+        ${CATEGORIES.map(c => `<a href="${topicLink(c.slug)}"${catAttr(c.slug)}>${c.name}</a>`).join("")}
       </nav>
       <div class="footer__line">
         <a href="mailto:${SITE.email}">${SITE.email}</a>
@@ -326,16 +328,34 @@ function buildFooter() {
    কার্ড নয় — পত্রিকার মতো: শিরোনামই লিংক, কলাম রেখা দিয়ে আলাদা।        */
 const whenOf = a => esc(a.time || timeAgo(a.createdAt));
 
-const kickFor = a =>
-  `<div class="st__kick"><a class="label" href="${topicLink(a.cat)}">${catName(a.cat)}</a>` +
-  (a.exclusive && a.cat !== "exclusive" ? `<span class="label ex">${ICON.star}এক্সক্লুসিভ</span>` : "") + `</div>`;
+/* প্রতিটি বিভাগের নিজস্ব রং — data-cat দেখে CSS রং বসায় (style.css-এর "বিভাগের রং") */
+const catAttr = slug => slug ? ` data-cat="${esc(slug)}"` : "";
+
+/* খবরের ট্যাগ — ক্রম: এক্সক্লুসিভ / অনুসন্ধান আগে, তারপর বিভাগ (ঢাকা, খুলনা...)।
+   বিভাগ এক্সক্লুসিভ বা অনুসন্ধান হলে অঞ্চলের "প্রশাসনিক বিভাগ" থেকে বিভাগের ট্যাগ বসে। */
+const catChip = slug => `<a class="label" href="${topicLink(slug)}"${catAttr(slug)}>${catName(slug)}</a>`;
+function kickTags(a) {
+  const tags = [];
+  if (a.exclusive && a.cat !== "exclusive") tags.push(`<span class="label ex">${ICON.star}এক্সক্লুসিভ</span>`);
+  tags.push(catChip(a.cat));
+  if ((a.cat === "exclusive" || a.cat === "investigation") && a.division && CATEGORIES.some(c => c.slug === a.division)) {
+    tags.push(catChip(a.division));
+  }
+  return tags.join("");
+}
+
+const kickFor = a => `<div class="st__kick">${kickTags(a)}</div>`;
 
 const imgBlock = (a, eager) =>
   `<a class="st__img" href="${link(a)}" tabindex="-1" aria-hidden="true"><img src="${imgFor(a)}" alt="" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">${
     a.exclusive ? `<span class="ribbon">${ICON.star}এক্সক্লুসিভ</span>` : ""}</a>`;
 
+/* পড়ার সংখ্যা — সব ডিভাইস মিলিয়ে মোট কতবার খোলা হয়েছে */
+const viewsText = n => `${bnNum(n || 0)} বার পঠিত`;
+
 const metaFor = (a, withRead = true) =>
-  `<div class="st__meta"><span>${whenOf(a)}</span>${withRead ? `<span>${bnNum(a.read || 1)} মিনিটের পাঠ</span>` : ""}</div>`;
+  `<div class="st__meta"><span>${whenOf(a)}</span>${withRead ? `<span>${bnNum(a.read || 1)} মিনিটের পাঠ</span>` : ""}${
+    a.views ? `<span>${viewsText(a.views)}</span>` : ""}</div>`;
 
 /* size: xl | lg | md | sm ; img: ছবি দেখাবে কি না ; dek: সারাংশ দেখাবে কি না */
 function story(a, { size = "md", img = true, dek = false, eager = false, center = false, cls = "" } = {}) {
@@ -401,23 +421,15 @@ function opinionCard(a) {
   </article>`;
 }
 
-/* "সর্বশেষ" — সময়সহ শিরোনামের কলাম; খবর না থাকলে কিছুই দেখায় না */
-/* from দিলে শুধু সেই তালিকা থেকে (যেমন বিভাগের পাতায় শুধু ওই বিভাগের খবর) */
-function latestColumn(n = 6, title = "সর্বশেষ", from = null) {
-  const list = from ? from.slice(0, n) : recent(n);
-  if (!list.length) return "";
-  return `<span class="label">${title}</span><div class="brs">${list.map(brief).join("")}</div>`;
-}
-
 /* "সাম্প্রতিক খবর" — ১, ২, ৩… নম্বর দেওয়া শিরোনামের তালিকা (বিভাগের পাতার পাশে) */
 function recentList(list, n = 6, title = "সাম্প্রতিক খবর") {
   const items = list.slice(0, n);
   if (!items.length) return "";
   return `<span class="label">${title}</span><ol class="rl">${items.map((a, i) => `
-    <li><a class="rl__item" href="${link(a)}">
+    <li${catAttr(a.cat)}><a class="rl__item" href="${link(a)}">
       <span class="rl__num" aria-hidden="true">${bnNum(i + 1)}</span>
       <span><span class="rl__title">${esc(a.title)}</span>
-        <span class="rl__meta">${catName(a.cat)} · ${whenOf(a)}</span></span>
+        <span class="rl__meta">${catName(a.cat)} · ${whenOf(a)}${a.views ? ` · ${viewsText(a.views)}` : ""}</span></span>
     </a></li>`).join("")}</ol>`;
 }
 
@@ -427,11 +439,6 @@ function topicsStrip() {
   if (!tags.length) return "";
   return `<div class="topics"><span class="label">আলোচিত</span>${tags.map(t =>
     `<a href="category.html?q=${encodeURIComponent(t)}">${esc(t)}</a>`).join("")}</div>`;
-}
-
-function otherDesks(exclude, title = "অন্যান্য বিভাগ") {
-  return `<div class="otherdesks"><span class="label">${title}</span>${CATEGORIES.filter(c => c.slug !== exclude).map(c =>
-    `<a href="${topicLink(c.slug)}">${c.name}</a>`).join("")}</div>`;
 }
 
 function emptyBox(title, text, withHome = false) {
@@ -461,7 +468,7 @@ function initTheme() {
       b.setAttribute("aria-label", next === "dark" ? "ডার্ক মোড চালু করুন" : "লাইট মোড চালু করুন");
     });
     const meta = $('meta[name="theme-color"]');
-    if (meta) meta.content = mode === "dark" ? "#11100e" : "#ffffff";
+    if (meta) meta.content = mode === "dark" ? "#0f1115" : "#ffffff";
   }
   $$(".js-theme").forEach(b => b.addEventListener("click", () => {
     const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";

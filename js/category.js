@@ -45,6 +45,7 @@ function render() {
     list = inCat(slug);
     kicker = "বিভাগ";
     heading = catName(slug);
+    document.querySelector(".sheethead").dataset.cat = slug;   /* পাতার মাথা বিভাগের রঙে */
     sub = `এই বিভাগে এখন পর্যন্ত ${bnNum(list.length)}টি প্রতিবেদন।`;
   } else {
     list = POSTS;
@@ -87,8 +88,6 @@ function render() {
       (rest.length ? `<section class="section">${deskHead("আর্কাইভ")}
         <div>${rest.map(indexRow).join("")}</div></section>` : "");
   }
-
-  document.getElementById("otherDesks").innerHTML = otherDesks(slug, slug ? "অন্যান্য বিভাগ" : "বিভাগসমূহ");
 }
 
 render();

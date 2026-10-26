@@ -243,6 +243,32 @@ async function publishPost(id) {
   CACHE = list;
 }
 
+/* ---------- খবর পড়া হলো: পড়ার সংখ্যা ১ বাড়ানো --------------------------
+   সার্ভার মোডে সব ডিভাইস মিলিয়ে একটাই মোট সংখ্যা; লোকাল মোডে শুধু এই ব্রাউজারে।
+   ফেরত: নতুন মোট সংখ্যা (না পারলে null)।                                  */
+async function recordView(id) {
+  const bump = n => {
+    const p = CACHE.find(x => String(x.id) === String(id));
+    if (p) p.views = n;
+    return n;
+  };
+  if (STORE_MODE === "server") {
+    try {
+      const data = await apiSend({ action: "view", id: String(id) });
+      bump(data.views);
+      writeSaved();
+      return data.views;
+    } catch (e) { return null; }
+  }
+  const list = loadLocal();
+  const p = list.find(x => String(x.id) === String(id));
+  if (!p) return null;
+  p.views = (p.views || 0) + 1;
+  saveLocal(list);
+  CACHE = list;
+  return p.views;
+}
+
 /* ---------- অ্যাডমিন লগইন ---------------------------------------------- */
 /* পাসওয়ার্ড ব্রাউজারের কোডে নেই। সার্ভার থাকলে সেখানে যাচাই হয়; লোকাল মোডে
    (Live Server / ফাইল থেকে খোলা, PHP নেই) শুধু এর SHA-256 ছাপ মেলানো হয় — ছাপ থেকে

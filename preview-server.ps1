@@ -31,6 +31,7 @@ try {
 $dataDir  = Join-Path $Root "data"
 $upDir    = Join-Path $Root "uploads"
 $postFile = Join-Path $dataDir "posts.json"
+$viewFile = Join-Path $dataDir "views.json"   # খবর কতবার পড়া হয়েছে — api/posts.php-এর মতো
 $script:Tokens = New-Object System.Collections.Generic.List[string]  # একাধিক ডিভাইস একসাথে লগইন থাকতে পারে
 
 # ---- এই পিসির নেটওয়ার্ক (ওয়াই-ফাই/ল্যান) ঠিকানা বের করা ----
@@ -142,6 +143,25 @@ function Write-Posts($list) {
   [System.IO.File]::WriteAllText($postFile, $json, (New-Object System.Text.UTF8Encoding($false)))
 }
 
+# পড়ার সংখ্যা: { "id": সংখ্যা } — হ্যাশটেবল হিসেবে ফেরত
+function Read-Views {
+  $h = @{}
+  if (Test-Path $viewFile) {
+    try {
+      $obj = (Get-Content $viewFile -Raw -Encoding UTF8) | ConvertFrom-Json
+      if ($obj) { foreach ($p in $obj.PSObject.Properties) { $h[$p.Name] = [int]$p.Value } }
+    } catch {}
+  }
+  return $h
+}
+
+function Write-Views($h) {
+  if (-not (Test-Path $dataDir)) { New-Item -ItemType Directory -Force $dataDir | Out-Null }
+  $json = $h | ConvertTo-Json -Compress
+  if (-not $json -or $h.Count -eq 0) { $json = "{}" }
+  [System.IO.File]::WriteAllText($viewFile, $json, (New-Object System.Text.UTF8Encoding($false)))
+}
+
 # পোস্ট কনটেন্টে শুধু নির্দিষ্ট কিছু ট্যাগ অনুমোদিত — বাকি সব সরানো হয়
 # (ভেতরের লেখা থেকে যায়), api/posts.php-এর sanitize_rich()-এর সমমানের
 # হোয়াইটলিস্ট যুক্তি, যাতে লোকাল টেস্ট আসল সার্ভারের আচরণ ঠিকভাবে দেখায়।
@@ -217,6 +237,12 @@ while ($listener.IsListening) {
         if (-not $authed) {
           $all = @($all | Where-Object { $_.status -ne "draft" })
         }
+        # প্রতিটি খবরের সঙ্গে পড়ার সংখ্যা (শুধু পাঠানোর সময়)
+        $views = Read-Views
+        foreach ($q in $all) {
+          $n = 0; if ($views.ContainsKey([string]$q.id)) { $n = $views[[string]$q.id] }
+          $q | Add-Member -NotePropertyName views -NotePropertyValue $n -Force
+        }
         Send-Json $ctx @{ ok = $true; posts = $all }
         $ctx.Response.Close(); continue
       }
@@ -246,6 +272,22 @@ while ($listener.IsListening) {
           $script:Tokens.Add($newToken)
           if ($script:Tokens.Count -gt 20) { $script:Tokens.RemoveAt(0) }  # পুরোনো টোকেন ছেঁটে ফেলা
           Send-Json $ctx @{ ok = $true; token = $newToken }
+        }
+        $ctx.Response.Close(); continue
+      }
+
+      # ---- খবর পড়া হলো: পড়ার সংখ্যা ১ বাড়ানো (লগইন লাগে না) ----
+      if ($body.action -eq "view") {
+        $vid = [string]$body.id
+        $post = @(Read-Posts) | Where-Object { [string]$_.id -eq $vid -and $_.status -ne "draft" } | Select-Object -First 1
+        if ($vid -notmatch '^[A-Za-z0-9_-]{1,40}$' -or -not $post) {
+          Send-Json $ctx @{ ok = $false; error = "খবরটি পাওয়া যায়নি।" } 404
+        } else {
+          $views = Read-Views
+          $count = 1; if ($views.ContainsKey($vid)) { $count = $views[$vid] + 1 }
+          $views[$vid] = $count
+          Write-Views $views
+          Send-Json $ctx @{ ok = $true; views = $count }
         }
         $ctx.Response.Close(); continue
       }

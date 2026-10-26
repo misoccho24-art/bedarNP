@@ -32,6 +32,7 @@ $dataDir  = $base . '/data';
 $upDir    = $base . '/uploads';
 $postFile = $dataDir . '/posts.json';
 $tokFile  = $dataDir . '/token.php';
+$viewFile = $dataDir . '/views.json';     // খবর কতবার পড়া হয়েছে — {"id": সংখ্যা}; খবরের ফাইল থেকে আলাদা
 $tryFile  = $dataDir . '/attempts.json';  // ভুল লগইনের হিসাব — data/ ফোল্ডার বাইরে থেকে খোলা যায় না
 
 /* ---------- ছোট সহায়ক ------------------------------------------------- */
@@ -173,6 +174,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             return !isset($p['status']) || $p['status'] !== 'draft';
         }));
     }
+    /* প্রতিটি খবরের সঙ্গে কতবার পড়া হয়েছে তা জুড়ে দেওয়া (শুধু পাঠানোর সময়, সংরক্ষণ হয় না) */
+    $views = is_file($viewFile) ? json_decode((string)@file_get_contents($viewFile), true) : [];
+    if (!is_array($views)) $views = [];
+    foreach ($posts as &$p) { $p['views'] = isset($views[(string)$p['id']]) ? (int)$views[(string)$p['id']] : 0; }
+    unset($p);
     out(['ok' => true, 'posts' => $posts]);
 }
 
@@ -216,6 +222,34 @@ if ($action === 'login') {
     $token = bin2hex(random_bytes(24));
     if (!addToken($tokFile, $token)) fail('টোকেন সংরক্ষণ করা যায়নি।', 500);
     out(['ok' => true, 'token' => $token]);
+}
+
+/* ---------- খবর পড়া হলো: পড়ার সংখ্যা ১ বাড়ানো (লগইন লাগে না) ---------------
+   প্রতিবার খোলাই গোনা হয়, সব ডিভাইস মিলিয়ে একটাই মোট সংখ্যা।
+   ফাইল লক করে পড়া-লেখা — একসাথে অনেকে খুললেও সংখ্যা হারায় না।           */
+if ($action === 'view') {
+    $id = isset($body['id']) ? (string)$body['id'] : '';
+    if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', $id)) fail('খবরটি চেনা যায়নি।');
+    $exists = false;
+    foreach (readPosts($postFile) as $q) {
+        if ((string)$q['id'] === $id && (!isset($q['status']) || $q['status'] !== 'draft')) { $exists = true; break; }
+    }
+    if (!$exists) fail('খবরটি পাওয়া যায়নি।', 404);
+    if (!ensureDir($dataDir)) fail('data ফোল্ডারে লেখার অনুমতি নেই।', 500);
+
+    $fp = @fopen($viewFile, 'c+');
+    if (!$fp) fail('পড়ার সংখ্যা সংরক্ষণ করা যায়নি।', 500);
+    flock($fp, LOCK_EX);
+    $views = json_decode((string)stream_get_contents($fp), true);
+    if (!is_array($views)) $views = [];
+    $views[$id] = (isset($views[$id]) ? (int)$views[$id] : 0) + 1;
+    ftruncate($fp, 0);
+    rewind($fp);
+    fwrite($fp, json_encode($views));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+    out(['ok' => true, 'views' => $views[$id]]);
 }
 
 /* এর পরের সব কাজে লগইন লাগবে */

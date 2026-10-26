@@ -100,17 +100,15 @@ document.getElementById("article").innerHTML = `
   </div></div>
 
   <header class="story__head">
-    <nav class="crumbs" aria-label="অবস্থান"><a href="index.html">প্রচ্ছদ</a>${ICON.chev}<a href="${topicLink(post.cat)}">${catName(post.cat)}</a></nav>
-    <div class="story__kick">
-      <a class="label" href="${topicLink(post.cat)}">${catName(post.cat)}</a>
-      ${post.exclusive && post.cat !== "exclusive" ? `<span class="label ex">${ICON.star}এক্সক্লুসিভ</span>` : ""}
-    </div>
+    <nav class="crumbs" aria-label="অবস্থান"><a href="index.html">প্রচ্ছদ</a>${ICON.chev}<a href="${topicLink(post.cat)}"${catAttr(post.cat)}>${catName(post.cat)}</a></nav>
+    <div class="story__kick">${kickTags(post)}</div>
     <h1 class="story__title">${esc(post.title)}</h1>
     ${post.subHeadline ? `<p class="story__sub">${esc(post.subHeadline)}</p>` : ""}
     <div class="story__by">
       <span>লিখেছেন <b>${esc(author)}</b></span>
       <span title="${esc(dateFull)}">${ICON.clock}${esc(when)}</span>
       <span>${ICON.book}${bnNum(post.read || 1)} মিনিটের পাঠ</span>
+      <span class="js-views">${ICON.eye}${viewsText(post.views || 0)}</span>
       ${regionParts.length ? `<span>${ICON.pin}${esc(regionParts.join(", "))}</span>` : ""}
     </div>
     <div class="story__tools">
@@ -194,13 +192,27 @@ updateProgress();
 
 render();
 
+/* পড়ার সংখ্যা: প্রতিবার খবরটি খুললে ১ বাড়ে। লিংকে মাউস রাখলে ব্রাউজার পেজটি আগেই
+   তৈরি করে রাখে (prerender) — তখন গোনা হয় না, পাঠক সত্যিই খুললে তবেই গোনা হয়। */
+function showViews(n) {
+  if (n == null) return;
+  $$(".js-views").forEach(el => { el.innerHTML = ICON.eye + viewsText(n); });
+}
+if (post) {
+  const count = () => recordView(post.id).then(showViews);
+  if (document.prerendering) document.addEventListener("prerenderingchange", count, { once: true });
+  else count();
+}
+
 /* পেছনে নতুন তালিকা এলে শুধু তখনই আবার আঁকা হয় যখন এই খবরটি নিজেই বদলেছে বা
-   মুছে গেছে — নইলে পাঠক পড়তে পড়তে পেজ নড়ে যেত।                           */
-let shown = post ? JSON.stringify(post) : null;
+   মুছে গেছে — নইলে পাঠক পড়তে পড়তে পেজ নড়ে যেত। শুধু পড়ার সংখ্যা বদলালে
+   পুরো পেজ নয়, শুধু সংখ্যাটি হালনাগাদ হয়।                                  */
+const sigOf = p => p ? JSON.stringify({ ...p, views: 0 }) : null;
+let shown = sigOf(post);
 watchPosts(() => {
   const now = find();
-  const sig = now ? JSON.stringify(now) : null;
-  if (sig === shown) return;
+  const sig = sigOf(now);
+  if (sig === shown) { if (now) showViews(now.views || 0); return; }
   shown = sig;
   post = now;
   tidyUrl();
